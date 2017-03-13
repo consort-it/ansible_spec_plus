@@ -1,3 +1,9 @@
+require 'simplecov'
+
+SimpleCov.start do
+   add_filter 'lib/helpers'
+end
+
 RSpec.configure do |config|
   # Use color in STDOUT
   config.color = true
