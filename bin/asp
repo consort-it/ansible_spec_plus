@@ -1,0 +1,50 @@
+#! /usr/bin/env ruby
+# coding: utf-8
+
+require_relative '../lib/ansible_spec_plus'
+require_relative '../lib/helpers/log'
+
+# require 'ansible_spec_plus'
+require 'optparse'
+
+include Helpers::Log
+
+# defaults
+DEFAULT_OPTS = {
+}
+options = DEFAULT_OPTS.clone
+
+# show help unless a command is provided
+ARGV.push('-h') if ARGV.empty?
+
+opts_parser = OptionParser.new do |opts|
+  opts.banner = "Ansible Spec Plus is an addon to 'ansible_spec' which enables you to run
+specs for Ansible roles, hosts and/or playbooks separately. Furthermore
+it provides you with a simple resource coverage summary."
+  opts.separator  ""
+  opts.separator  "Usage:"
+  opts.separator  "  asp [OPTIONS]"
+  opts.separator  ""
+  opts.separator  "Options:"
+
+  opts.on('-a', '--all', 'lists all available spec runners') { options[:all] = true }
+
+  opts.separator  ""
+  opts.separator  "Further information:"
+  opts.separator  "  http://..."
+end
+
+begin
+  opts_parser.parse!
+rescue => e
+  log.error "#{e}"
+  exit 0
+end
+
+begin
+  AnsibleSpecPlus.new(
+    options
+  )
+rescue => e
+  raise e
+end
