@@ -5,7 +5,6 @@ require_relative '../lib/ansible_spec_plus'
 require_relative '../lib/helpers/log'
 
 # require 'ansible_spec_plus'
-require 'optparse'
 
 include Helpers::Log
 
@@ -14,31 +13,36 @@ DEFAULT_OPTS = {
 }
 options = DEFAULT_OPTS.clone
 
-# show help unless a command is provided
-ARGV.push('-h') if ARGV.empty?
+KNOWN_RESOURCES = [
+  'file',
+  'template',
+  'docker_container',
+  'docker_image',
+  'service'
+]
 
-opts_parser = OptionParser.new do |opts|
-  opts.banner = "Ansible Spec Plus is an addon to 'ansible_spec' which enables you to run
-specs for Ansible roles, hosts and/or playbooks separately. Furthermore
-it provides you with a simple resource coverage summary."
-  opts.separator  ""
-  opts.separator  "Usage:"
-  opts.separator  "  asp [OPTIONS]"
-  opts.separator  ""
-  opts.separator  "Options:"
+def help_message
+  STDOUT.puts <<-EOF
+  Ansible Spec Plus is an addon to 'ansible_spec' which enables you to run
+  specs for Ansible roles, hosts and/or playbooks separately. Furthermore
+  it provides you with a simple resource coverage summary.
 
-  opts.on('-a', '--all', 'lists all available spec runners') { options[:all] = true }
-
-  opts.separator  ""
-  opts.separator  "Further information:"
-  opts.separator  "  http://..."
+  Usage:
+  asp all                                          # list all available specs
+  asp [rolespec|hostspec|playbookspec] list        # list all available role/host/playbook specs
+  EOF
 end
 
-begin
-  opts_parser.parse!
-rescue => e
-  log.error "#{e}"
-  exit 0
+case ARGV[0]
+when "rolespec"
+  case ARGV[1]
+  when "list"
+    options[:role_spec_list] = true
+  else
+    options[:role_spec_run] = ARGV[1]
+  end
+else
+  help_message
 end
 
 begin
