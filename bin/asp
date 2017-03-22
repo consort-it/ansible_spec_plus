@@ -1,14 +1,11 @@
 #! /usr/bin/env ruby
 # coding: utf-8
 
-require_relative '../lib/ansible_spec_plus'
-require_relative '../lib/helpers/log'
-
 # require 'ansible_spec_plus'
-
 require 'optparse'
 
-options = {}
+require_relative '../lib/ansible_spec_plus'
+require_relative '../lib/helpers/log'
 
 include Helpers::Log
 
@@ -21,6 +18,8 @@ KNOWN_RESOURCES = [
   'docker_image',
   'service'
 ]
+
+options = {}
 
 opt_parser = OptionParser.new do |opt|
   opt.banner = "Ansible Spec Plus is an addon to 'ansible_spec' which enables you to run
@@ -50,28 +49,28 @@ case ARGV[0]
 when "rolespec"
   case ARGV[1]
   when "list"
-    options[:role_spec_list] = true
+    AnsibleSpecPlus.list_role_specs
   else
-    options[:role_spec_run] = ARGV[1]
+    AnsibleSpecPlus.run_role_spec(ARGV[1])
   end
 when "hostspec"
   case ARGV[1]
   when "list"
-    options[:host_spec_list] = true
+    AnsibleSpecPlus.list_host_specs
   else
-    options[:host_spec_run] = ARGV[1]
+    AnsibleSpecPlus.run_host_spec(ARGV[1])
   end
 when "all"
   case ARGV[1]
   when "list"
-    options[:all_spec_list] = true
+    AnsibleSpecPlus.list_all_specs
   end
 end
 
-begin
-  AnsibleSpecPlus.new(
-    options
-  )
-rescue => e
-  raise e
-end
+# begin
+#   AnsibleSpecPlus.new(
+#     options
+#   )
+# rescue => e
+#   raise e
+# end

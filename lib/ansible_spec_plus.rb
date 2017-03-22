@@ -7,7 +7,7 @@ require 'ansible_spec'
 require 'pp'
 require 'json'
 
-class AnsibleSpecPlus
+module AnsibleSpecPlus
 
   # TODO do not make this absolute
   BASE_DIR = '../vagrant-lifecycle'
@@ -15,25 +15,13 @@ class AnsibleSpecPlus
 
   include Helpers::Log
 
-  def initialize(options)
-    self.list_all_specs if options[:all_spec_list] == true
-
-    self.list_role_specs if options[:role_spec_list] == true
-    self.list_host_specs if options[:host_spec_list] == true
-    self.list_playbook_specs if options[:playbook_spec_list] == true
-
-    self.run_role_spec(options[:role_spec_run]) if options[:role_spec_run]
-    self.run_host_spec(options[:host_spec_run]) if options[:host_spec_run]
-    self.run_playbook_spec(options[:playbook_spec_run]) if options[:playbook_spec_run]
-  end
-
-  def list_all_specs
+  def self.list_all_specs
     list_role_specs
     list_host_specs
     # list_playbook_specs
   end
 
-  def list_role_specs
+  def self.list_role_specs
     get_roles_with_specs.each do |role|
       command = "asp rolespec #{role}"
       description = "# run role specs for #{role}"
@@ -47,7 +35,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def list_host_specs
+  def self.list_host_specs
     get_hosts_with_specs.each do |host|
       command = "asp hostspec #{host}"
       description = "# run host specs for #{host}"
@@ -57,7 +45,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def run_role_spec(role)
+  def self.run_role_spec(role)
     if check_role_directory_available(role) && check_role_specs_available(role)
       create_role_rake_task(role)
 
@@ -69,7 +57,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def run_host_spec(host)
+  def self.run_host_spec(host)
     create_host_rake_task(host)
 
     # Dir.chdir(BASE_DIR) do
@@ -79,7 +67,7 @@ class AnsibleSpecPlus
     calculate_coverage('host', host)
   end
 
-  def get_all_roles
+  def self.get_all_roles
     all_roles = []
 
     Dir.chdir(BASE_DIR) do
@@ -91,7 +79,7 @@ class AnsibleSpecPlus
     return all_roles
   end
 
-  def get_roles_with_specs
+  def self.get_roles_with_specs
     roles_with_specs = []
 
     Dir.chdir(BASE_DIR) do
@@ -109,7 +97,7 @@ class AnsibleSpecPlus
     return roles_with_specs
   end
 
-  def get_hosts_with_specs
+  def self.get_hosts_with_specs
     hosts_with_specs = []
 
     Dir.chdir(BASE_DIR) do
@@ -125,11 +113,11 @@ class AnsibleSpecPlus
     return hosts_with_specs.uniq
   end
 
-  def get_roles_without_specs
+  def self.get_roles_without_specs
     get_all_roles - get_roles_with_specs
   end
 
-  def check_role_directory_available(role)
+  def self.check_role_directory_available(role)
     Dir.chdir(BASE_DIR) do
       if ! Dir.exists?("roles/#{role}")
         log.error "Directory 'roles/#{role}' does not exist. That's strange, isn't it?"
@@ -140,7 +128,7 @@ class AnsibleSpecPlus
     return true
   end
 
-  def check_role_specs_available(role)
+  def self.check_role_specs_available(role)
     Dir.chdir(BASE_DIR) do
       successes = 0
 
@@ -157,7 +145,7 @@ class AnsibleSpecPlus
     return true
   end
 
-  def get_hosts_where_role_is_used(role)
+  def self.get_hosts_where_role_is_used(role)
     role_used_in_hosts = []
 
     Dir.chdir(BASE_DIR) do
@@ -177,7 +165,7 @@ class AnsibleSpecPlus
     return role_used_in_hosts
   end
 
-  def load_role_resources(name)
+  def self.load_role_resources(name)
     resources = []
 
     Dir.chdir(BASE_DIR) do
@@ -191,7 +179,7 @@ class AnsibleSpecPlus
     return resources
   end
 
-  def load_host_resources(name)
+  def self.load_host_resources(name)
     resources = []
 
     Dir.chdir(BASE_DIR) do
@@ -205,7 +193,7 @@ class AnsibleSpecPlus
     return resources.flatten
   end
 
-  def analyze_resources(resources)
+  def self.analyze_resources(resources)
     analyzed_resources = []
 
     resources.each do |resource|
@@ -265,7 +253,7 @@ class AnsibleSpecPlus
     return analyzed_resources
   end
 
-  def get_hosts_from_vai_host_file
+  def self.get_hosts_from_vai_host_file
     inventory_hosts = []
     hosts_with_vagrant_vars = {}
 
@@ -302,7 +290,7 @@ class AnsibleSpecPlus
     return hosts_with_vagrant_vars
   end
 
-  def create_role_rake_task(role)
+  def self.create_role_rake_task(role)
     Dir.chdir(BASE_DIR) do
       properties = AnsibleSpec.get_properties
       cfg = AnsibleSpec::AnsibleCfg.new
@@ -346,7 +334,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def create_host_rake_task(host)
+  def self.create_host_rake_task(host)
     Dir.chdir(BASE_DIR) do
       properties = AnsibleSpec.get_properties
       cfg = AnsibleSpec::AnsibleCfg.new
@@ -387,7 +375,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def print_rounded_role_coverage(all_resources, differences)
+  def self.print_rounded_role_coverage(all_resources, differences)
     if all_resources.count == 0
       return "0%"
     else
@@ -395,7 +383,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def calculate_coverage(type, name)
+  def self.calculate_coverage(type, name)
     Dir.chdir(BASE_DIR) do
       json_report = File.read('report.json')
       parsed_report = JSON.parse(json_report)
@@ -437,7 +425,7 @@ class AnsibleSpecPlus
     end
   end
 
-  def read_all_yaml_files
+  def self.read_all_yaml_files
     yaml = {}
 
     Dir.chdir(BASE_DIR) do
