@@ -10,8 +10,8 @@ require 'json'
 module AnsibleSpecPlus
 
   # TODO do not make this absolute
-  BASE_DIR = '../vagrant-lifecycle'
-  # BASE_DIR = '../ansible-infrastructure'
+  # BASE_DIR = '../vagrant-lifecycle'
+  BASE_DIR = '../ansible-infrastructure'
 
   include Helpers::Log
 
@@ -28,20 +28,14 @@ module AnsibleSpecPlus
 
       puts "#{command} #{description.rjust(40)}"
     end
-
-    if get_roles_without_specs.size >= 1
-      puts "\nYou may want to add specs for this role(s), too:"
-      get_roles_without_specs.map { |r| puts "- #{r}" }
-    end
   end
 
   def self.list_host_specs
     get_hosts_with_specs.each do |host|
       command = "asp hostspec #{host}"
       description = "# run host specs for #{host}"
-      offline_notice = get_hosts_from_vai_host_file.keys.include?(host) ? "" : "(#{host} is offline. Tests won't run!)"
 
-      puts "#{command} #{description.rjust(40)} #{offline_notice}"
+      puts "#{command} #{description.rjust(40)}"
     end
   end
 
@@ -60,9 +54,9 @@ module AnsibleSpecPlus
   def self.run_host_spec(host)
     create_host_rake_task(host)
 
-    # Dir.chdir(BASE_DIR) do
-    #   Rake.application["#{host}"].invoke()
-    # end
+    Dir.chdir(BASE_DIR) do
+      Rake.application["#{host}"].invoke()
+    end
 
     calculate_coverage('host', host)
   end
@@ -97,6 +91,10 @@ module AnsibleSpecPlus
     return roles_with_specs
   end
 
+  def self.check_for_specs_in_file(file)
+    File.readlines(file).grep(/describe\s{1}/).any?
+  end
+
   def self.get_hosts_with_specs
     hosts_with_specs = []
 
@@ -105,7 +103,7 @@ module AnsibleSpecPlus
         next unless File.directory?(dir)
 
         Dir.glob("#{dir}/*_spec.rb").each do |file|
-          hosts_with_specs << File.basename(dir) if File.size(file) > 1
+          hosts_with_specs << File.basename(dir) if check_for_specs_in_file(file)
         end
       end
     end
@@ -194,6 +192,8 @@ module AnsibleSpecPlus
   end
 
   def self.analyze_resources(resources)
+    # pp resources
+
     analyzed_resources = []
 
     resources.each do |resource|
@@ -294,21 +294,22 @@ module AnsibleSpecPlus
     Dir.chdir(BASE_DIR) do
       properties = AnsibleSpec.get_properties
       cfg = AnsibleSpec::AnsibleCfg.new
+      get_hosts_where_role_is_used = get_hosts_where_role_is_used(role)
 
       properties.each do |property|
-        next unless property['name'] == get_hosts_where_role_is_used(role).first
+        next unless property['name'] == get_hosts_where_role_is_used.first
 
         if property['hosts'].empty?
-          if ! get_hosts_from_vai_host_file.keys.include?(get_hosts_where_role_is_used(role).first)
+          if ! get_hosts_from_vai_host_file.keys.include?(get_hosts_where_role_is_used.first)
             log.error "Host doesn't seem to exist. You may want to boot it?"
           end
 
           get_hosts_from_vai_host_file.each do |host, values|
             values.each do |property|
-              next unless property['name'] == get_hosts_where_role_is_used(role).first
+              next unless property['name'] == get_hosts_where_role_is_used.first
 
               RSpec::Core::RakeTask.new(role.to_sym) do |t|
-                log.info "Run role tests for #{role} on #{get_hosts_where_role_is_used(role).first} (#{property["ansible_ssh_host"]}:#{property["ansible_ssh_port"]})"
+                log.info "Run role tests for #{role} on #{get_hosts_where_role_is_used.first} (#{property["ansible_ssh_host"]}:#{property["ansible_ssh_port"]})"
 
                 ENV['TARGET_HOST'] = property["ansible_ssh_host"]
                 ENV['TARGET_PORT'] = property["ansible_ssh_port"].to_s
@@ -322,7 +323,7 @@ module AnsibleSpecPlus
         else
           property['hosts'].each do |host|
             RSpec::Core::RakeTask.new(role.to_sym) do |t|
-              log.info "Run role tests for #{role} on #{get_hosts_where_role_is_used(role).first} (#{host['uri']})"
+              log.info "Run role tests for #{role} on #{get_hosts_where_role_is_used.first} (#{host['uri']})"
 
               ENV['TARGET_HOST'] = host['uri']
 
