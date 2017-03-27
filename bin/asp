@@ -29,7 +29,7 @@ it provides you with a simple resource coverage summary.
 Usage: asp COMMAND [OPTIONS]"
   opt.separator  ""
   opt.separator  "Commands:"
-  opt.separator  "     all list                                 # list all available specs"
+  opt.separator  "     list                                 # list all available specs"
   opt.separator  "     [rolespec|hostspec|playbookspec] list    # list all available role/host/playbook specs"
   opt.separator  ""
   opt.separator  "Options:"
@@ -60,17 +60,6 @@ when "hostspec"
   else
     AnsibleSpecPlus.run_host_spec(ARGV[1])
   end
-when "all"
-  case ARGV[1]
-  when "list"
-    AnsibleSpecPlus.list_all_specs
-  end
+when "list"
+  AnsibleSpecPlus.list_all_specs
 end
-
-# begin
-#   AnsibleSpecPlus.new(
-#     options
-#   )
-# rescue => e
-#   raise e
-# end
