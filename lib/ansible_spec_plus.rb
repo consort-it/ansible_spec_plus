@@ -15,185 +15,21 @@ module AnsibleSpecPlus
 
   include Helpers::Log
 
+  ##################
+  # COMMON METHODS #
+  ##################
+
   def self.list_all_specs
     list_role_specs
     list_host_specs
     # list_playbook_specs
   end
 
-  def self.list_role_specs
-    get_roles_with_specs.each do |role|
-      command = "asp rolespec #{role}"
-      description = "# run role specs for #{role}"
-
-      puts "#{command} #{description.rjust(40)}"
-    end
-  end
-
-  def self.list_host_specs
-    get_hosts_with_specs.each do |host|
-      command = "asp hostspec #{host}"
-      description = "# run host specs for #{host}"
-
-      puts "#{command} #{description.rjust(40)}"
-    end
-  end
-
-  def self.run_role_spec(role)
-    if check_role_directory_available(role) && check_role_specs_available(role)
-      create_role_rake_task(role)
-
-      Dir.chdir(BASE_DIR) do
-        Rake.application["#{role}"].invoke()
-      end
-
-      calculate_coverage('role', role)
-    end
-  end
-
-  def self.run_host_spec(host)
-    create_host_rake_task(host)
-
-    Dir.chdir(BASE_DIR) do
-      Rake.application["#{host}"].invoke()
-    end
-
-    calculate_coverage('host', host)
-  end
-
-  def self.get_all_roles
-    all_roles = []
-
-    Dir.chdir(BASE_DIR) do
-      Dir.glob("roles/*").each do |role|
-        all_roles << File.basename(role)
-      end
-    end
-
-    return all_roles
-  end
-
-  def self.get_roles_with_specs
-    roles_with_specs = []
-
-    Dir.chdir(BASE_DIR) do
-      get_all_roles.each do |role|
-        successes = 0
-
-        Dir.glob("roles/#{role}/spec/*_spec.rb").each do |file|
-          successes =+ 1 if File.size(file) > 1
-        end
-
-        roles_with_specs << File.basename(role) if successes > 0
-      end
-    end
-
-    return roles_with_specs
-  end
-
   def self.check_for_specs_in_file(file)
     File.readlines(file).grep(/describe\s{1}/).any?
   end
 
-  def self.get_hosts_with_specs
-    hosts_with_specs = []
-
-    Dir.chdir(BASE_DIR) do
-      Dir.glob('./spec/*').each do |dir|
-        next unless File.directory?(dir)
-
-        Dir.glob("#{dir}/*_spec.rb").each do |file|
-          hosts_with_specs << File.basename(dir) if check_for_specs_in_file(file)
-        end
-      end
-    end
-
-    return hosts_with_specs.uniq
-  end
-
-  def self.get_roles_without_specs
-    get_all_roles - get_roles_with_specs
-  end
-
-  def self.check_role_directory_available(role)
-    Dir.chdir(BASE_DIR) do
-      if ! Dir.exists?("roles/#{role}")
-        log.error "Directory 'roles/#{role}' does not exist. That's strange, isn't it?"
-        return false
-      end
-    end
-
-    return true
-  end
-
-  def self.check_role_specs_available(role)
-    Dir.chdir(BASE_DIR) do
-      successes = 0
-
-      Dir.glob("roles/#{role}/spec/*_spec.rb").each do |file|
-        successes =+ 1 if File.size(file) > 1
-      end
-
-      if successes == 0
-        log.error "'#{role}' does not have specs but you requested me to run specs. Huu?"
-        return false
-      end
-    end
-
-    return true
-  end
-
-  def self.get_hosts_where_role_is_used(role)
-    role_used_in_hosts = []
-
-    Dir.chdir(BASE_DIR) do
-      YAML.load_file("site.yml").each do |playbook|
-        YAML.load_file(playbook['include'].to_s).each do |site|
-          site['roles'].each do |playbook_role|
-            if playbook_role.respond_to?(:each)
-              role_used_in_hosts << site['name'].to_s if playbook_role['role'].include?(role)
-            else
-              role_used_in_hosts << site['name'].to_s if playbook_role.include?(role)
-            end
-          end
-        end
-      end
-    end
-
-    return role_used_in_hosts
-  end
-
-  def self.load_role_resources(name)
-    resources = []
-
-    Dir.chdir(BASE_DIR) do
-      Dir.glob("roles/#{name}/tasks/*.yml").each do |file|
-        AnsibleSpec.load_playbook(file).each do |resource|
-          resources << resource
-        end
-      end
-    end
-
-    return resources
-  end
-
-  def self.load_host_resources(name)
-    resources = []
-
-    Dir.chdir(BASE_DIR) do
-      AnsibleSpec.load_playbook("#{name}.yml").each do |playbook|
-        playbook['roles'].each do |role|
-          resources << load_role_resources(role)
-        end
-      end
-    end
-
-    return resources.flatten
-  end
-
   def self.analyze_resources(resources)
-    # pp resources
-
     analyzed_resources = []
 
     resources.each do |resource|
@@ -290,6 +126,177 @@ module AnsibleSpecPlus
     return hosts_with_vagrant_vars
   end
 
+  def self.print_rounded_role_coverage(all_resources, differences)
+    if all_resources.count == 0
+      return "0%"
+    else
+      "#{((all_resources - differences).count.to_f / all_resources.count.to_f * 100.0).round}%"
+    end
+  end
+
+  def self.calculate_coverage(type, name)
+    Dir.chdir(BASE_DIR) do
+      json_report = File.read('report.json')
+      parsed_report = JSON.parse(json_report)
+
+      case type
+      when 'role'
+        all_resources = analyze_resources(load_role_resources(name))
+      when 'host'
+        all_resources = analyze_resources(load_host_resources(name))
+      else
+        log.error "Unknow type '#{type}'. Should be either role, host or playbook."
+        exit 1
+      end
+
+      tested_resources = []
+
+      parsed_report['examples'].each do |example|
+        tested_resources << example['full_description'].gsub(/"\s{1}.*/,'"')
+      end
+
+      tested_resources = tested_resources.uniq
+
+      differences = []
+
+      all_resources.each do |resource|
+        differences << resource if ! tested_resources.include?(resource)
+      end
+
+      puts "Total resources: #{all_resources.count}"
+      puts "Touched resources: #{(all_resources - differences).count}"
+      puts "Resource coverage: #{print_rounded_role_coverage(all_resources, differences)}"
+
+      if differences.count > 0
+        puts "\nUncovered resources:"
+        differences.each do |item|
+          puts "- #{item}"
+        end
+      end
+    end
+  end
+
+  ################
+  # ROLE METHODS #
+  ################
+
+  def self.list_role_specs
+    get_roles_with_specs.each do |role|
+      command = "asp rolespec #{role}"
+      description = "# run role specs for #{role}"
+
+      puts "#{command} #{description.rjust(40)}"
+    end
+  end
+
+  def self.run_role_spec(role)
+    if check_role_directory_available(role) && check_role_specs_available(role)
+      create_role_rake_task(role)
+
+      Dir.chdir(BASE_DIR) do
+        Rake.application["#{role}"].invoke()
+      end
+
+      calculate_coverage('role', role)
+    end
+  end
+
+  def self.get_all_roles
+    all_roles = []
+
+    Dir.chdir(BASE_DIR) do
+      Dir.glob("roles/*").each do |role|
+        all_roles << File.basename(role)
+      end
+    end
+
+    return all_roles
+  end
+
+  def self.get_roles_with_specs
+    roles_with_specs = []
+
+    Dir.chdir(BASE_DIR) do
+      get_all_roles.each do |role|
+        successes = 0
+
+        Dir.glob("roles/#{role}/spec/*_spec.rb").each do |file|
+          successes =+ 1 if File.size(file) > 1
+        end
+
+        roles_with_specs << File.basename(role) if successes > 0
+      end
+    end
+
+    return roles_with_specs
+  end
+
+  def self.get_roles_without_specs
+    get_all_roles - get_roles_with_specs
+  end
+
+  def self.check_role_directory_available(role)
+    Dir.chdir(BASE_DIR) do
+      if ! Dir.exists?("roles/#{role}")
+        log.error "Directory 'roles/#{role}' does not exist. That's strange, isn't it?"
+        return false
+      end
+    end
+
+    return true
+  end
+
+  def self.check_role_specs_available(role)
+    Dir.chdir(BASE_DIR) do
+      successes = 0
+
+      Dir.glob("roles/#{role}/spec/*_spec.rb").each do |file|
+        successes =+ 1 if File.size(file) > 1
+      end
+
+      if successes == 0
+        log.error "'#{role}' does not have specs but you requested me to run specs. Huu?"
+        return false
+      end
+    end
+
+    return true
+  end
+
+  def self.get_hosts_where_role_is_used(role)
+    role_used_in_hosts = []
+
+    Dir.chdir(BASE_DIR) do
+      YAML.load_file("site.yml").each do |playbook|
+        YAML.load_file(playbook['include'].to_s).each do |site|
+          site['roles'].each do |playbook_role|
+            if playbook_role.respond_to?(:each)
+              role_used_in_hosts << site['name'].to_s if playbook_role['role'].include?(role)
+            else
+              role_used_in_hosts << site['name'].to_s if playbook_role.include?(role)
+            end
+          end
+        end
+      end
+    end
+
+    return role_used_in_hosts
+  end
+
+  def self.load_role_resources(name)
+    resources = []
+
+    Dir.chdir(BASE_DIR) do
+      Dir.glob("roles/#{name}/tasks/*.yml").each do |file|
+        AnsibleSpec.load_playbook(file).each do |resource|
+          resources << resource
+        end
+      end
+    end
+
+    return resources
+  end
+
   def self.create_role_rake_task(role)
     Dir.chdir(BASE_DIR) do
       properties = AnsibleSpec.get_properties
@@ -376,68 +383,141 @@ module AnsibleSpecPlus
     end
   end
 
-  def self.print_rounded_role_coverage(all_resources, differences)
-    if all_resources.count == 0
-      return "0%"
-    else
-      "#{((all_resources - differences).count.to_f / all_resources.count.to_f * 100.0).round}%"
+  ################
+  # HOST METHODS #
+  ################
+
+  def self.list_host_specs
+    get_hosts_with_specs.each do |host|
+      command = "asp hostspec #{host}"
+      description = "# run host specs for #{host}"
+
+      puts "#{command} #{description.rjust(40)}"
     end
   end
 
-  def self.calculate_coverage(type, name)
+  def self.run_host_spec(host)
+    create_host_rake_task(host)
+
     Dir.chdir(BASE_DIR) do
-      json_report = File.read('report.json')
-      parsed_report = JSON.parse(json_report)
+      Rake.application["#{host}"].invoke()
+    end
 
-      case type
-      when 'role'
-        all_resources = analyze_resources(load_role_resources(name))
-      when 'host'
-        all_resources = analyze_resources(load_host_resources(name))
-      else
-        log.error "Unknow type '#{type}'. Should be either role, host or playbook."
-        exit 1
+    calculate_coverage('host', host)
+  end
+
+  def self.load_host_resources(name)
+    resources = []
+
+    Dir.chdir(BASE_DIR) do
+      AnsibleSpec.load_playbook("#{name}.yml").each do |playbook|
+        playbook['roles'].each do |role|
+          resources << load_role_resources(role)
+        end
       end
+    end
 
-      tested_resources = []
+    return resources.flatten
+  end
 
-      parsed_report['examples'].each do |example|
-        tested_resources << example['full_description'].gsub(/"\s{1}.*/,'"')
+  def self.get_hosts_with_specs
+    hosts_with_specs = []
+
+    get_vagrant_or_regular_ansible_hosts.each do |host|
+      hosts_with_specs << host if check_for_host_specs(host)
+    end
+
+    return hosts_with_specs.uniq
+  end
+
+  def self.get_vagrant_or_regular_ansible_hosts
+    hosts = []
+
+    Dir.chdir(BASE_DIR) do
+      properties = AnsibleSpec.get_properties
+      cfg = AnsibleSpec::AnsibleCfg.new
+
+      properties.each do |property|
+        if property['hosts'].empty?
+          get_hosts_from_vai_host_file.each do |host, values|
+            values.each do |property|
+              hosts << property['name'] if check_for_existing_playbook(property['name'])
+            end
+          end
+        else
+          property['hosts'].each do |host|
+            hosts << property['name'] if check_for_existing_playbook(property['name'])
+          end
+        end
       end
+    end
 
-      tested_resources = tested_resources.uniq
+    return hosts
+  end
 
-      differences = []
-
-      all_resources.each do |resource|
-        differences << resource if ! tested_resources.include?(resource)
-      end
-
-      puts "Total resources: #{all_resources.count}"
-      puts "Touched resources: #{(all_resources - differences).count}"
-      puts "Resource coverage: #{print_rounded_role_coverage(all_resources, differences)}"
-
-      if differences.count > 0
-        puts "\nUncovered resources:"
-        differences.each do |item|
-          puts "- #{item}"
+  def self.check_for_host_specs(host)
+    Dir.chdir(BASE_DIR) do
+      if File.directory?("./spec/#{host}")
+        Dir.glob("./spec/#{host}/*_spec.rb").each do |file|
+          return true if check_for_specs_in_file(file)
         end
       end
     end
   end
 
-  def self.read_all_yaml_files
-    yaml = {}
+  def self.get_roles_of_host(host)
+    roles_with_specs = []
 
     Dir.chdir(BASE_DIR) do
-      Dir.glob("**/*.yml").each do |file|
-        next if YAML.load_file(file).nil?
-
-        yaml[file] = YAML.load_file(file)
+      YAML.load_file("#{host}.yml").each do |playbook|
+        playbook['roles'].each do |role|
+          roles_with_specs << role if check_role_specs_available(role)
+        end
       end
     end
 
-    return yaml
+    return roles_with_specs.uniq
+  end
+
+  ####################
+  # PLAYBOOK METHODS #
+  ####################
+
+  def self.list_playbook_specs
+    get_hosts_with_host_and_or_role_specs.each do |host|
+      command = "asp playbookspec #{host}"
+      description = "# run host specs and role specs for #{host}"
+
+      puts "#{command} #{description.rjust(40)}"
+    end
+  end
+
+  def self.check_for_existing_playbook(host)
+    Dir.chdir(BASE_DIR) do
+      if File.exists?("#{host}.yml")
+        return true
+      else
+        raise IOError "Playbook #{host}.yml not found."
+      end
+    end
+  end
+
+  def self.get_playbooks_with_host_specs
+    playbooks_with_specs = []
+
+    Dir.chdir(BASE_DIR) do
+      Dir.glob("./playbooks/*").each do |playbook|
+        pp playbook
+        # if check_for_host_specs(host)
+      end
+    end
+
+    exit 0
+    return playbooks_with_specs.uniq
+  end
+
+  def self.get_playbooks_with_host_and_or_role_specs
+    get_playbooks_with_host_specs
   end
 
 end
