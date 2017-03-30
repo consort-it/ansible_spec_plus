@@ -1,4 +1,5 @@
 require_relative '../lib/helpers/log'
+require_relative '../lib/ansiblespec_helper'
 
 require 'rake'
 require 'rspec/core/rake_task'
@@ -311,7 +312,7 @@ class AnsibleSpecPlus
 
   def create_role_rake_task(role)
     Dir.chdir(BASE_DIR) do
-      properties = AnsibleSpec.get_properties
+      properties = AnsibleSpecHelper.get_properties
       cfg = AnsibleSpec::AnsibleCfg.new
       get_hosts_where_role_is_used = get_hosts_where_role_is_used(role)
 
@@ -356,7 +357,7 @@ class AnsibleSpecPlus
 
   def create_host_rake_task(host)
     Dir.chdir(BASE_DIR) do
-      properties = AnsibleSpec.get_properties
+      properties = AnsibleSpecHelper.get_properties
       cfg = AnsibleSpec::AnsibleCfg.new
 
       properties.each do |property|
@@ -446,7 +447,7 @@ class AnsibleSpecPlus
     hosts = []
 
     Dir.chdir(BASE_DIR) do
-      properties = AnsibleSpec.get_properties
+      properties = AnsibleSpecHelper.get_properties
       cfg = AnsibleSpec::AnsibleCfg.new
 
       properties.each do |property|

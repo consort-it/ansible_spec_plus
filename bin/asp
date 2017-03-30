@@ -6,9 +6,6 @@
 require 'optparse'
 
 require_relative '../lib/ansible_spec_plus'
-require_relative '../lib/helpers/log'
-
-include Helpers::Log
 
 ARGV.push('-h') if ARGV.empty?
 
