@@ -4,7 +4,7 @@ require_relative '../lib/ansible_spec_plus'
 describe AnsibleSpecPlus do
   include Helpers::Log
 
-  subject { described_class }
+  subject { described_class.new }
 
   describe 'list_all_specs' do
     it "lists specs for roles, hosts and playbook at once" do
@@ -144,22 +144,17 @@ describe AnsibleSpecPlus do
   describe 'get_hosts_with_specs' do
     it 'returns an array with hosts that have specs' do
       # GIVEN
-      hosts = ["./spec/foo_host", "./spec/spec_helper.rb"]
+      allow(subject).to receive(:get_vagrant_or_regular_ansible_hosts).and_return ['foo_host1', 'foo_host2', 'foo_host2']
 
-      allow(Dir).to receive(:glob).with('./spec/*').and_return(hosts)
-
-      allow(File).to receive(:directory?).with('./spec/foo_host').and_return true
-      allow(File).to receive(:directory?).with('./spec/spec_helper.rb').and_return false
-
-      allow(Dir).to receive(:glob).with('./spec/foo_host/*_spec.rb').and_return ["./spec/foo_host/foo_host_spec.rb"]
-
-      allow(subject).to receive(:check_for_specs_in_file).with('./spec/foo_host/foo_host_spec.rb').and_return true
+      allow(subject).to receive(:check_for_host_specs).with('foo_host1').and_return false
+      allow(subject).to receive(:check_for_host_specs).with('foo_host2').and_return true
+      allow(subject).to receive(:check_for_host_specs).with('foo_host3').and_return false
 
       # WHEN
       res = subject.get_hosts_with_specs
 
       # THEN
-      expect(res).to eq ['foo_host']
+      expect(res).to eq ['foo_host2']
     end
   end
 
