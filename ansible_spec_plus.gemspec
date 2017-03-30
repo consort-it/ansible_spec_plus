@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.name          = "ansible_spec_plus"
   gem.date          = Time.now.strftime("%Y-%m-%d")
   # gem.version       = AnsibleSpecPlus::VERSION
-  gem.version       = "0.0.1"
+  gem.version       = "0.0.3"
   gem.authors       = ["Meik Minks"]
   gem.email         = ["mminks@inoxio.de"]
   gem.description   = %q{Ansible Config Parser for Serverspec. Run test Multi Role and Multi Host by Ansible Configuration}
