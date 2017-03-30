@@ -10,16 +10,19 @@ describe AnsibleSpecPlus do
     it "lists specs for roles, hosts and playbook at once" do
       roles = ['role1', 'role2']
       hosts = ['host1']
+      playbooks = ['playbook1', 'playbook2']
+
       host_file = { "host1" => {} }
 
       allow(subject).to receive(:get_roles_with_specs).and_return(roles)
       allow(subject).to receive(:get_hosts_with_specs).and_return(hosts)
+      allow(subject).to receive(:get_playbooks_with_host_and_or_role_specs).and_return(playbooks)
       allow(subject).to receive(:get_hosts_from_vai_host_file).and_return(host_file)
 
       # WHEN / THEN
       expect do
         subject.list_all_specs
-      end.to output("asp rolespec role1               # run role specs for role1\nasp rolespec role2               # run role specs for role2\nasp hostspec host1               # run host specs for host1\n").to_stdout
+      end.to output("asp rolespec role1               # run role specs for role1\nasp rolespec role2               # run role specs for role2\nasp hostspec host1               # run host specs for host1\nasp playbookspec playbook1       # run playbook specs and role specs for playbook1\nasp playbookspec playbook2       # run playbook specs and role specs for playbook2\n").to_stdout
     end
   end
 
@@ -247,16 +250,17 @@ describe AnsibleSpecPlus do
       expect(res).to eq false
     end
 
-    it "returns log message that indicates an error" do
+    it "returns false if there is an error" do
       # GIVEN
       allow(Dir).to receive(:glob).with('roles/foo/spec/*_spec.rb').and_return ['roles/foo/spec/foo_spec.rb']
       allow(File).to receive(:size).with('roles/foo/spec/foo_spec.rb').and_return 1
 
-      # THEN
-      expect(log).to receive(:error).with("'foo' does not have specs but you requested me to run specs. Huu?")
-
       # WHEN
-      subject.check_role_specs_available('foo')
+      res = subject.check_role_specs_available('foo')
+
+      # THEN
+      expect(res).to eq false
+
     end
   end
 

@@ -10,8 +10,8 @@ require 'json'
 class AnsibleSpecPlus
 
   # TODO do not make this absolute
-  # BASE_DIR = '../vagrant-lifecycle'
-  BASE_DIR = '../ansible-infrastructure'
+  BASE_DIR = '../vagrant-lifecycle'
+  # BASE_DIR = '../ansible-infrastructure'
 
   include Helpers::Log
 
@@ -34,7 +34,7 @@ class AnsibleSpecPlus
   def list_all_specs
     list_role_specs
     list_host_specs
-    # list_playbook_specs
+    list_playbook_specs
   end
 
   def check_for_specs_in_file(file)
@@ -267,7 +267,7 @@ class AnsibleSpecPlus
       end
 
       if successes == 0
-        log.error "'#{role}' does not have specs but you requested me to run specs. Huu?"
+        # log.error "'#{role}' does not have specs but you requested me to run specs. Huu?"
         return false
       end
     end
@@ -471,8 +471,14 @@ class AnsibleSpecPlus
     Dir.chdir(BASE_DIR) do
       if File.directory?("./spec/#{host}")
         Dir.glob("./spec/#{host}/*_spec.rb").each do |file|
-          return true if check_for_specs_in_file(file)
+          if check_for_specs_in_file(file)
+            return true
+          else
+            return false
+          end
         end
+      else
+        return false
       end
     end
   end
@@ -481,7 +487,7 @@ class AnsibleSpecPlus
     roles_with_specs = []
 
     Dir.chdir(BASE_DIR) do
-      YAML.load_file("#{host}.yml").each do |playbook|
+      YAML.load_file("./playbooks/#{host}.yml").each do |playbook|
         playbook['roles'].each do |role|
           roles_with_specs << role if check_role_specs_available(role)
         end
@@ -496,11 +502,11 @@ class AnsibleSpecPlus
   ####################
 
   def list_playbook_specs
-    get_hosts_with_host_and_or_role_specs.each do |host|
-      command = "asp playbookspec #{host}"
-      description = "# run host specs and role specs for #{host}"
+    get_playbooks_with_host_and_or_role_specs.each do |playbook|
+      command = "asp playbookspec #{playbook}"
+      description = "# run playbook specs and role specs for #{playbook}"
 
-      puts "#{command} #{description.rjust(40)}"
+      puts "#{command} #{description.rjust(55)}"
     end
   end
 
@@ -509,27 +515,43 @@ class AnsibleSpecPlus
       if File.exists?("#{host}.yml")
         return true
       else
-        raise IOError "Playbook #{host}.yml not found."
+        return false
       end
     end
   end
 
-  def get_playbooks_with_host_specs
-    playbooks_with_specs = []
+  def get_playbooks_spec_summary
+    playbooks = []
 
     Dir.chdir(BASE_DIR) do
       Dir.glob("./playbooks/*").each do |playbook|
-        pp playbook
-        # if check_for_host_specs(host)
+        playbook = File.basename(playbook)
+        host = playbook.gsub(/\.yml|\.yaml/,'')
+
+        playbooks << { playbook => check_for_host_specs(host) }
       end
     end
 
-    exit 0
-    return playbooks_with_specs.uniq
+    return playbooks.uniq
   end
 
   def get_playbooks_with_host_and_or_role_specs
-    get_playbooks_with_host_specs
+    playbooks = []
+
+    get_playbooks_spec_summary.each do |entry|
+      host = entry.keys[0].gsub(/\.yml|\.yaml/,'')
+      has_specs = entry.values[0]
+
+      if has_specs
+        playbooks << host
+      else
+        get_roles_of_host(host).each do |role|
+          playbooks << host if check_role_specs_available(role)
+        end
+      end
+    end
+
+    return playbooks.uniq
   end
 
 end
