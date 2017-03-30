@@ -1,6 +1,7 @@
 #! /usr/bin/env ruby
 # coding: utf-8
 
+# TODO comment in again when ready
 # require 'ansible_spec_plus'
 require 'optparse'
 
@@ -45,28 +46,27 @@ end
 
 opt_parser.parse!
 
-# DO IT
-
-case ARGV[0]
-when "rolespec"
-  case ARGV[1]
-  when "list"
-    AnsibleSpecPlus.list_role_specs
+if ARGV[0] == 'list'
+  options[:list] = true
+elsif ARGV[0] == 'rolespec'
+  if ARGV[1] == 'list'
+    options[:list_rolespec] = true
   else
-    AnsibleSpecPlus.run_role_spec(ARGV[1])
+    options[:run_rolespec] = ARGV[1]
   end
-when "hostspec"
-  case ARGV[1]
-  when "list"
-    AnsibleSpecPlus.list_host_specs
+elsif ARGV[0] == 'hostspec'
+  if ARGV[1] == 'list'
+    options[:list_hostspec] = true
   else
-    AnsibleSpecPlus.run_host_spec(ARGV[1])
+    options[:run_hostspec] = ARGV[1]
   end
-when "playbookspec"
-  case ARGV[1]
-  when "list"
-    AnsibleSpecPlus.list_playbook_specs
+elsif ARGV[0] == 'playbookspec'
+  if ARGV[1] == 'list'
+    options[:list_playbookspec] = true
+  else
+    options[:run_playbookspec] = ARGV[1]
   end
-when "list"
-  AnsibleSpecPlus.list_all_specs
+else
 end
+
+AnsibleSpecPlus.new.run(options)
