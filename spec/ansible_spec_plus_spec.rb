@@ -1,5 +1,6 @@
 require_relative '../spec_helper'
 require_relative '../lib/ansible_spec_plus'
+require_relative '../lib/ansiblespec_helper'
 
 describe AnsibleSpecPlus do
   include Helpers::Log
