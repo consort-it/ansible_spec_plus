@@ -157,6 +157,8 @@ class AnsibleSpecPlus
         all_resources = analyze_resources(load_role_resources(name))
       when 'host'
         all_resources = analyze_resources(load_host_resources(name))
+      when 'playbook'
+        all_resources = analyze_resources(load_playbook_resources(name))
       else
         log.error "Unknow type '#{type}'. Should be either role, host or playbook."
         exit 1
@@ -374,11 +376,13 @@ class AnsibleSpecPlus
       cfg = AnsibleSpec::AnsibleCfg.new
 
       properties.each do |property|
+        next unless property['name'] == host
+
         if property['hosts'].empty?
-          if ! get_hosts_from_vai_host_file.keys.include?(host)
-            log.error "Host '#{host}' doesn't seem to be up or even exist."
-            exit 0
-          end
+          # if ! get_hosts_from_vai_host_file.keys.include?(host)
+          #   log.error "Host '#{host}' doesn't seem to be up or even exist."
+          #   exit 0
+          # end
 
           get_hosts_from_vai_host_file.each do |host, values|
             values.each do |property|
@@ -413,7 +417,7 @@ class AnsibleSpecPlus
     create_host_rake_task(host)
 
     Dir.chdir(BASE_DIR) do
-      Rake.application["#{host}"].invoke()
+      Rake.application.invoke_task("#{host}")
     end
 
     calculate_coverage('host', host)
@@ -423,9 +427,13 @@ class AnsibleSpecPlus
     resources = []
 
     Dir.chdir(BASE_DIR) do
-      AnsibleSpec.load_playbook("#{name}.yml").each do |playbook|
-        playbook['roles'].each do |role|
-          resources << load_role_resources(role)
+      YAML.load_file('./site.yml').each do |site|
+        next unless site.values[0] =~ /#{name}\.(yml|yaml)/
+
+        playbook_path = site.values[0]
+
+        AnsibleSpec.load_playbook(playbook_path).each do |playbook|
+          playbook['tasks'].map { |task| resources << task }
         end
       end
     end
@@ -488,7 +496,15 @@ class AnsibleSpecPlus
     roles_with_specs = []
 
     Dir.chdir(BASE_DIR) do
-      YAML.load_file("./playbooks/#{host}.yml").each do |playbook|
+      playbook_path = ''
+
+      YAML.load_file('./site.yml').each do |site|
+        next unless site.values[0] =~ /#{host}\.(yml|yaml)/
+
+        playbook_path = site.values[0]
+      end
+
+      YAML.load_file(playbook_path).each do |playbook|
         playbook['roles'].each do |role|
           roles_with_specs << role if check_role_specs_available(role)
         end
@@ -505,29 +521,22 @@ class AnsibleSpecPlus
   def list_playbook_specs
     get_playbooks_with_host_and_or_role_specs.each do |playbook|
       command = "asp playbookspec #{playbook}"
-      description = "# run playbook specs and role specs for #{playbook}"
+      description = "# run playbook specs (host specs and role specs) for #{playbook} playbook"
 
-      puts "#{command} #{description.rjust(55)}"
+      puts "#{command} #{description.rjust(77)}"
     end
   end
 
   def run_playbook_spec(playbook)
     create_all_roles_rake_task(playbook)
+    create_host_rake_task(playbook) if check_for_host_specs(playbook)
 
-    get_playbooks_host_spec_summary.each do |entry|
-      host = entry.keys[0].gsub(/\.yml|\.yaml/,'')
-
-      next unless host == playbook
-
-      create_host_rake_task(host) if entry.values[0]
-
-      Dir.chdir(BASE_DIR) do
-        Rake.application["#{playbook}_all_roles"].invoke()
-        Rake.application["#{host}"].invoke()  if entry.values[0]
-      end
+    Dir.chdir(BASE_DIR) do
+      Rake.application.invoke_task("#{playbook}_all_roles")
+      Rake.application.invoke_task("#{playbook}") if check_for_host_specs(playbook)
     end
 
-    # calculate_coverage('role', role)
+    calculate_coverage('playbook', playbook)
   end
 
   def create_all_roles_rake_task(playbook)
@@ -582,6 +591,28 @@ class AnsibleSpecPlus
     end
   end
 
+  def load_playbook_resources(name)
+    resources = []
+
+    # collect role resources
+    Dir.chdir(BASE_DIR) do
+      YAML.load_file('./site.yml').each do |site|
+        next unless site.values[0] =~ /#{name}\.(yml|yaml)/
+
+        playbook_path = site.values[0]
+
+        AnsibleSpec.load_playbook(playbook_path).each do |playbook|
+          playbook['roles'].map { |role| resources << load_role_resources(role) }
+        end
+      end
+    end
+
+    # collect host resources
+    resources << load_host_resources(name)
+
+    return resources.flatten
+  end
+
   def check_for_existing_playbook(host)
     Dir.chdir(BASE_DIR) do
       if File.exists?("#{host}.yml")
@@ -596,11 +627,13 @@ class AnsibleSpecPlus
     playbooks = []
 
     Dir.chdir(BASE_DIR) do
-      Dir.glob("./playbooks/*").each do |playbook|
-        playbook = File.basename(playbook)
-        host = playbook.gsub(/\.yml|\.yaml/,'')
+      YAML.load_file('./site.yml').each do |site|
+        Dir.glob(site.values[0]).each do |playbook|
+          playbook = File.basename(playbook)
+          host = playbook.gsub(/\.yml|\.yaml/,'')
 
-        playbooks << { playbook => check_for_host_specs(host) }
+          playbooks << { playbook => check_for_host_specs(host) }
+        end
       end
     end
 

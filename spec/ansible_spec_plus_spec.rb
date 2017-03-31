@@ -23,7 +23,7 @@ describe AnsibleSpecPlus do
       # WHEN / THEN
       expect do
         subject.list_all_specs
-      end.to output("asp rolespec role1               # run role specs for role1\nasp rolespec role2               # run role specs for role2\nasp hostspec host1               # run host specs for host1\nasp playbookspec playbook1       # run playbook specs and role specs for playbook1\nasp playbookspec playbook2       # run playbook specs and role specs for playbook2\n").to_stdout
+      end.to output("asp rolespec role1               # run role specs for role1\nasp rolespec role2               # run role specs for role2\nasp hostspec host1               # run host specs for host1\nasp playbookspec playbook1       # run playbook specs (host specs and role specs) for playbook1 playbook\nasp playbookspec playbook2       # run playbook specs (host specs and role specs) for playbook2 playbook\n").to_stdout
     end
   end
 
