@@ -433,6 +433,8 @@ class AnsibleSpecPlus
         playbook_path = site.values[0]
 
         AnsibleSpec.load_playbook(playbook_path).each do |playbook|
+          next if playbook['tasks'].nil?
+          
           playbook['tasks'].map { |task| resources << task }
         end
       end

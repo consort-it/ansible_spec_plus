@@ -406,33 +406,72 @@ describe AnsibleSpecPlus do
     it 'returns resources for a given host' do
       # GIVEN
       playbook = [{
-        "name"=>"test_host",
-        "hosts"=>"test_host-hosts",
-        "remote_user"=>"{{ user }}",
-        "sudo"=>true,
-        "roles"=> ["role1", "role2"]
+        "hosts"=>"foo-hosts",
+        "name"=>"foo",
+        "remote_user"=>"vagrant",
+        "serial"=>1,
+        "vars_files"=>["roles/cme-infrastructure/vars/secrets.yml"],
+        "roles"=>
+         ["common",
+          "docker",
+          "docker-compose",
+          "docker-flow",
+          "java",
+          "maven",
+          "cme-infrastructure",
+          "cme-demo"],
+        "tasks"=>
+         [{"name"=>"Debian python-pymongo is present",
+           "pip"=>{"name"=>"pymongo", "state"=>"latest"}},
+          {"name"=>"create mongodb user and database 'hello-world-java'",
+           "mongodb_user"=>
+            {"login_user"=>"root",
+             "login_password"=>"secret",
+             "login_database"=>"admin",
+             "database"=>"hello-world-java",
+             "name"=>"hello-world-java",
+             "password"=>"hello-world-java",
+             "roles"=>"readWrite,dbAdmin",
+             "state"=>"present"}}]
       }]
-      allow(AnsibleSpec).to receive(:load_playbook).with('test_host.yml').and_return(playbook)
 
-      role1_resources = [{
-        "name"=>"create deploy user",
-        "user"=> {"name"=>"deploy", "comment"=>"User for deployments", "append"=>true},
-        "roles"=>[]
-      }]
-      allow(subject).to receive(:load_role_resources).with('role1').and_return(role1_resources)
-
-      role2_resources = [{
-        "name"=>"sudo right for deploy user is present",
-        "template"=> "src=sudo/deploy dest=/etc/sudoers.d/deploy owner=root group=root mode=0440",
-        "roles"=>[]
-      }]
-      allow(subject).to receive(:load_role_resources).with('role2').and_return(role2_resources)
+      allow(YAML).to receive(:load_file).with('./site.yml').and_return [{"include"=>"foo.yml"}]
+      allow(AnsibleSpec).to receive(:load_playbook).with('foo.yml').and_return(playbook)
 
       # WHEN
-      res = subject.load_host_resources('test_host')
+      res = subject.load_host_resources('foo')
 
       # THEN
-      expect(res).to eq [{"name"=>"create deploy user", "user"=> {"name"=>"deploy", "comment"=>"User for deployments", "append"=>true}, "roles"=>[]},{"name"=>"sudo right for deploy user is present", "template"=> "src=sudo/deploy dest=/etc/sudoers.d/deploy owner=root group=root mode=0440", "roles"=>[]}]
+      expect(res).to eq [{"name"=>"Debian python-pymongo is present", "pip"=>{"name"=>"pymongo", "state"=>"latest"}}, {"name"=>"create mongodb user and database 'hello-world-java'", "mongodb_user"=> {"login_user"=>"root", "login_password"=>"secret", "login_database"=>"admin", "database"=>"hello-world-java", "name"=>"hello-world-java", "password"=>"hello-world-java", "roles"=>"readWrite,dbAdmin", "state"=>"present"}}]
+    end
+
+    it 'returns no resources for a given host if there are none' do
+      # GIVEN
+      playbook = [{
+        "hosts"=>"foo-hosts",
+        "name"=>"foo",
+        "remote_user"=>"vagrant",
+        "serial"=>1,
+        "vars_files"=>["roles/cme-infrastructure/vars/secrets.yml"],
+        "roles"=>
+         ["common",
+          "docker",
+          "docker-compose",
+          "docker-flow",
+          "java",
+          "maven",
+          "cme-infrastructure",
+          "cme-demo"]
+      }]
+
+      allow(YAML).to receive(:load_file).with('./site.yml').and_return [{"include"=>"foo.yml"}]
+      allow(AnsibleSpec).to receive(:load_playbook).with('foo.yml').and_return(playbook)
+
+      # WHEN
+      res = subject.load_host_resources('foo')
+
+      # THEN
+      expect(res).to eq []
     end
   end
 
