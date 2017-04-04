@@ -20,6 +20,19 @@ node('master') {
 
       }
 
+      stage('Build') {
+
+        sh "docker build . --tag asp_build"
+        sh "docker run -v $(pwd):/home/ruby asp_build gem build ansible_spec_plus.gemspec"
+
+      }
+
+      stage('Release') {
+
+        sh ""
+
+      }
+
       // stage('Notification') {
       //
       //   GIT_AUTHOR = sh (
