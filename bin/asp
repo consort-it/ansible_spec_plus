@@ -14,7 +14,10 @@ KNOWN_RESOURCES = [
   'template',
   'docker_container',
   'docker_image',
-  'service'
+  'service',
+  'apt',
+  'pip',
+  'gem'
 ]
 
 options = {}

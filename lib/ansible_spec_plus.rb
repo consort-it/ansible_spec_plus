@@ -95,6 +95,15 @@ class AnsibleSpecPlus
         else
           resource_name = resource.values[1].split(" ")[0].gsub(/.*=/,'')
         end
+      elsif resource_type =~ /apt|pip|gem/
+        resource_type = 'Package'
+        resource.each do |item|
+          next unless item[0] =~ /apt|pip|gem/
+
+          resource_name = item[1]['name']
+        end
+      else
+        next
       end
 
       analyzed_resources << "#{resource_type} \"#{resource_name}\""
