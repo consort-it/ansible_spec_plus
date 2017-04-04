@@ -164,11 +164,11 @@ class AnsibleSpecPlus
 
       case type
       when 'role'
-        all_resources = analyze_resources(load_role_resources(name))
+        all_known_resources = analyze_resources(load_role_resources(name))
       when 'host'
-        all_resources = analyze_resources(load_host_resources(name))
+        all_known_resources = analyze_resources(load_host_resources(name))
       when 'playbook'
-        all_resources = analyze_resources(load_playbook_resources(name))
+        all_known_resources = analyze_resources(load_playbook_resources(name))
       else
         raise "Unknow type '#{type}'. Should be either role, host or playbook."
       end
@@ -183,13 +183,13 @@ class AnsibleSpecPlus
 
       differences = []
 
-      all_resources.each do |resource|
+      all_known_resources.each do |resource|
         differences << resource if ! tested_resources.include?(resource)
       end
 
-      puts "Total resources: #{all_resources.count}"
-      puts "Touched resources: #{(all_resources - differences).count}"
-      puts "Resource coverage: #{print_rounded_role_coverage(all_resources, differences)}"
+      puts "Total resources: #{all_known_resources.count}"
+      puts "Touched resources: #{(all_known_resources - differences).count}"
+      puts "Resource coverage: #{print_rounded_role_coverage(all_known_resources, differences)}"
 
       if differences.count > 0
         puts "\nUncovered resources:"
@@ -534,18 +534,21 @@ class AnsibleSpecPlus
   end
 
   def run_playbook_spec(playbook)
-    create_all_roles_rake_task(playbook)
-    create_host_rake_task(playbook) if check_for_host_specs(playbook)
+    create_playbook_rake_task(playbook)
 
     Dir.chdir(BASE_DIR) do
-      Rake.application.invoke_task("#{playbook}_all_roles")
-      Rake.application.invoke_task("#{playbook}") if check_for_host_specs(playbook)
+      Rake.application.invoke_task("#{playbook}")
     end
 
     calculate_coverage('playbook', playbook)
   end
 
-  def create_all_roles_rake_task(playbook)
+  def create_playbook_rake_task(playbook)
+    ENV['TARGET_HOST'] = ''
+    ENV['TARGET_PORT'] = ''
+    ENV['TARGET_PRIVATE_KEY'] = ''
+    ENV['TARGET_USER'] = ''
+
     ansiblespec_roles = []
 
     hostname = playbook.gsub(/\.yml|\.yaml/,'')
@@ -554,45 +557,28 @@ class AnsibleSpecPlus
       ansiblespec_roles << role if check_role_specs_available(role)
     end
 
-    unless ansiblespec_roles.nil?
-      Dir.chdir(BASE_DIR) do
-        properties = AnsibleSpecHelper.get_properties
-        cfg = AnsibleSpec::AnsibleCfg.new
+    Dir.chdir(BASE_DIR) do
+      properties = AnsibleSpecHelper.get_properties
+      cfg = AnsibleSpec::AnsibleCfg.new
 
-        properties.each do |property|
-          if property['hosts'].empty?
-            next unless property['name'] == hostname
-
-            get_hosts_from_vai_host_file.each do |host, record|
-              next unless host == hostname
-
-              record.each do |vagrant|
-                RSpec::Core::RakeTask.new("#{hostname}_all_roles".to_sym) do |t|
-                  log.info "Run tests on all roles for #{hostname}"
-
-                  ENV['TARGET_HOST'] = vagrant["ansible_ssh_host"]
-                  ENV['TARGET_PORT'] = vagrant["ansible_ssh_port"].to_s
-                  ENV['TARGET_PRIVATE_KEY'] = vagrant["ansible_ssh_private_key_file"]
-                  ENV['TARGET_USER'] = vagrant["ansible_ssh_user"]
-
-                  t.pattern = '{' + cfg.roles_path.join(',') + '}/{' + ansiblespec_roles.uniq.join(',') + '}/spec/*_spec.rb'
-                end
-              end
-            end
-          else
-            property['hosts'].each do |host|
-              next unless host == hostname
-
-              RSpec::Core::RakeTask.new("#{hostname}_all_roles".to_sym) do |t|
-                log.info "Run tests on all roles for #{hostname}"
-
-                ENV['TARGET_HOST'] = host['uri']
-
-                t.pattern = '{' + cfg.roles_path.join(',') + '}/{' + ansiblespec_roles.uniq.join(',') + '}/spec/*_spec.rb'
-              end
-            end
-          end
+      if properties.select { |item| item['name'] == hostname}[0]['hosts'].empty?
+        get_hosts_from_vai_host_file.select { |name,_| name == hostname }.each do |item|
+          ENV['TARGET_HOST'] = item.flatten.last['ansible_ssh_host']
+          ENV['TARGET_PORT'] = item.flatten.last['ansible_ssh_port']
+          ENV['TARGET_PRIVATE_KEY'] = item.flatten.last['ansible_ssh_private_key_file']
+          ENV['TARGET_USER'] = item.flatten.last['ansible_ssh_user']
         end
+      else
+        ENV['TARGET_HOST'] = properties.select { |item| item['name'] == hostname}[0]['hosts']['uri']
+      end
+
+      RSpec::Core::RakeTask.new("#{hostname}".to_sym) do |t|
+        log.info "Run playbook tests for #{hostname}"
+
+        roles_pattern = ",{#{cfg.roles_path.join(',')}}/{#{ansiblespec_roles.uniq.join(',')}}/spec/*_spec.rb" unless ansiblespec_roles.nil?
+        host_pattern = ",spec/#{hostname}/*_spec.rb" if check_for_host_specs(hostname)
+
+        t.pattern << roles_pattern + host_pattern
       end
     end
   end
@@ -614,9 +600,9 @@ class AnsibleSpecPlus
     end
 
     # collect host resources
-    resources << load_host_resources(name)
+    resources = resources.flatten + load_host_resources(name)
 
-    return resources.flatten
+    return resources
   end
 
   def check_for_existing_playbook(host)
