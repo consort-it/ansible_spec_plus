@@ -92,9 +92,9 @@ class AnsibleSpecPlus
           resource_name = resource.values[1].split(" ")[0].gsub(/.*=/,'')
         end
       elsif resource_type =~ /apt|pip|gem/
-        if resource_type == 'apt'
+        if (resource_type == 'apt') && (! resource['apt'].include?('name'))
           log.warn "Unknown resource: #{resource}"
-          next unless resource['apt'].include?('name')
+          next
         end
 
         resource_type = 'Package'
