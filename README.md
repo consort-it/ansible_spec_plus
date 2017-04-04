@@ -146,7 +146,7 @@ described at the [Serverspec documentation](http://serverspec.org/resource_types
 
 ### Example
 
-Test-code that verifies our future Ansible implementation:
+1. Create the test code that verifies our future Ansible implementation:
 
 ```roles/docker/spec/common_spec.rb
 require 'spec_helper'
@@ -156,7 +156,7 @@ describe package('python-pip') do
 end
 ```
 
-Run the test:
+2. Run the test and see it fail:
 
 `asp rolespec docker`
 
@@ -185,7 +185,7 @@ Failed examples:
 rspec ./roles/docker/spec/main_spec.rb:8 # Package "python-pip" should be installed by "apt"
 ```
 
-Implement the feature and provision your system:
+3. Implement the Ansible feature and provision your system:
 
 ```roles/docker/tasks/main.yml
 - name: Debian python-pip is present
@@ -197,7 +197,7 @@ Implement the feature and provision your system:
 
 `vagrant provision demo`
 
-Run the test again and see it pass:
+4. Run the test again and see it pass:
 
 `asp rolespec docker`
 
