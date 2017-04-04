@@ -91,7 +91,57 @@ config.vm.provision :vai do |ansible|
 end
 ```
 
-## Sample
+## Writing tests
+
+You can write tests for roles and/or hosts. Create a `*_spec.rb` file at the proper place (see below).
+Require your spec_helper to include all needed logic and start writing your specs. Use all resource types
+described at the [Serverspec documentation](http://serverspec.org/resource_types.html).
+
+## Running tests
+
+#### Role tests
+
+Role tests can be found under `roles/<name of your role>/spec/*_spec.rb`. Execute tests by simply typing
+
+```
+asp rolespec <name of your role>
+```
+
+or - for local test execution on a Vagrant box -
+
+```
+asp rolespec <name of your role> -l
+```
+
+#### Host tests
+
+Host tests can be found under `spec/<name of your host>/*_spec.rb`. Execute tests by simply typing
+
+```
+asp hostspec <name of your host>
+```
+
+or - for local test execution on a Vagrant box -
+
+```
+asp hostspec <name of your host> -l
+```
+
+#### Playbook tests
+
+Host tests combine role and host tests for a given playbook. Execute tests by simply typing
+
+```
+asp playbookspec <name of your playbook>
+```
+
+or - for local test execution on a Vagrant box -
+
+```
+asp playbookspec <name of your playbook> -l
+```
+
+## Example
 
 Please see [ansible-example](https://github.com/consort-it/ansible-example) for a full working example.
 
@@ -137,14 +187,6 @@ Please see [ansible-example](https://github.com/consort-it/ansible-example) for 
     │   └── demo_spec.rb
     └── spec_helper.rb
 ```
-
-## Writing tests
-
-You can write tests for roles and/or hosts. Create a `*_spec.rb` file at the proper place (see below).
-Require your spec_helper to include all needed logic and start writing your specs. Use all resource types
-described at the [Serverspec documentation](http://serverspec.org/resource_types.html).
-
-### Example
 
 1. Create the test code that verifies our future Ansible implementation:
 
@@ -226,50 +268,6 @@ Uncovered resources:
 - File "/root/.docker/config.json"
 - File "/home/vagrant/.docker"
 - File "/home/vagrant/.docker/config.json"
-```
-
-## Running tests
-
-#### Role tests
-
-Role tests can be found under `roles/<name of your role>/spec/*_spec.rb`. Execute tests by simply typing
-
-```
-asp rolespec <name of your role>
-```
-
-or - for local test execution on a Vagrant box -
-
-```
-asp rolespec <name of your role> -l
-```
-
-#### Host tests
-
-Host tests can be found under `spec/<name of your host>/*_spec.rb`. Execute tests by simply typing
-
-```
-asp hostspec <name of your host>
-```
-
-or - for local test execution on a Vagrant box -
-
-```
-asp hostspec <name of your host> -l
-```
-
-#### Playbook tests
-
-Host tests combine role and host tests for a given playbook. Execute tests by simply typing
-
-```
-asp playbookspec <name of your playbook>
-```
-
-or - for local test execution on a Vagrant box -
-
-```
-asp playbookspec <name of your playbook> -l
 ```
 
 # Contributing
