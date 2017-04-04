@@ -570,6 +570,8 @@ class AnsibleSpecPlus
           ENV['TARGET_USER'] = item.flatten.last['ansible_ssh_user']
         end
       else
+        pp properties.select { |item| item['name'] == hostname}
+        exit 0
         ENV['TARGET_HOST'] = properties.select { |item| item['name'] == hostname}[0]['hosts']['uri']
       end
 
