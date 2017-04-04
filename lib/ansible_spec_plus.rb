@@ -545,11 +545,6 @@ class AnsibleSpecPlus
   end
 
   def create_playbook_rake_task(playbook)
-    ENV['TARGET_HOST'] = ''
-    ENV['TARGET_PORT'] = ''
-    ENV['TARGET_PRIVATE_KEY'] = ''
-    ENV['TARGET_USER'] = ''
-
     ansiblespec_roles = []
 
     hostname = playbook.gsub(/\.yml|\.yaml/,'')
@@ -570,9 +565,7 @@ class AnsibleSpecPlus
           ENV['TARGET_USER'] = item.flatten.last['ansible_ssh_user']
         end
       else
-        pp properties.select { |item| item['name'] == hostname}
-        exit 0
-        ENV['TARGET_HOST'] = properties.select { |item| item['name'] == hostname}[0]['hosts']['uri']
+        ENV['TARGET_HOST'] = properties.select { |item| item['name'] == hostname}[0]['hosts'][0]['uri']
       end
 
       RSpec::Core::RakeTask.new("#{hostname}".to_sym) do |t|
