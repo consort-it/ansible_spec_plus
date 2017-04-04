@@ -1,0 +1,78 @@
+#! /usr/bin/env ruby
+# coding: utf-8
+
+require "fileutils"
+
+def safe_create_spec_helper
+  content = File.open(File.dirname(__FILE__) + "/../lib/src/spec/spec_helper.rb").read
+  safe_mkdir("spec")
+  safe_touch("spec/spec_helper.rb")
+  File.open("spec/spec_helper.rb", 'w') do |f|
+    f.puts content
+  end
+
+end
+
+def safe_create_ansiblespec
+  content = File.open(File.dirname(__FILE__) + "/../lib/src/.ansiblespec").read
+  safe_touch(".ansiblespec")
+  File.open(".ansiblespec", 'w') do |f|
+    f.puts content
+  end
+end
+
+def safe_create_rspec
+  content = File.open(File.dirname(__FILE__) + "/../lib/src/.rspec").read
+  safe_touch(".rspec")
+  File.open(".rspec", 'w') do |f|
+    f.puts content
+  end
+end
+
+def safe_mkdir(dir)
+  unless FileTest.exist?("#{dir}")
+    FileUtils.mkdir_p("#{dir}")
+    TermColor.green
+    puts "\t\tcreate\t#{dir}"
+    TermColor.reset
+  else
+    TermColor.red
+    puts "\t\texists\t#{dir}"
+    TermColor.reset
+  end
+end
+
+def safe_touch(file)
+  unless File.exists? "#{file}"
+    File.open("#{file}", 'w') do |f|
+        #f.puts content
+    end
+    TermColor.green
+    puts "\t\tcreate\t#{file}"
+    TermColor.reset
+  else
+    TermColor.red
+    puts "\t\texists\t#{file}"
+    TermColor.reset
+  end
+end
+
+class TermColor
+  class << self
+    def reset   ; c 0 ; end
+
+    def red     ; c 31; end
+
+    def green   ; c 32; end
+
+    def c(num)
+      print "\e[#{num.to_s}m"
+    end
+  end
+end
+
+safe_create_spec_helper
+safe_create_ansiblespec
+safe_create_rspec
+
+exit 0
