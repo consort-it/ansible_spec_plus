@@ -6,15 +6,14 @@
 Gem::Specification.new do |gem|
   gem.name          = "ansible_spec_plus"
   gem.date          = Time.now.strftime("%Y-%m-%d")
-  # gem.version       = AnsibleSpecPlus::VERSION
-  gem.version       = "0.0.3"
+  gem.version       = "1.0.0"
   gem.authors       = ["Meik Minks"]
   gem.email         = ["mminks@inoxio.de"]
-  gem.description   = %q{Ansible Config Parser for Serverspec. Run test Multi Role and Multi Host by Ansible Configuration}
-  gem.summary       = %q{Ansible Config Parser for Serverspec. Run test Multi Role and Multi Host by Ansible Configuration}
-  gem.homepage      = "https://github.com/volanja/ansible_spec"
+  gem.description   = %q{Ansible Config Parser for Serverspec to test roles, hosts and playbooks. Providing test coverage.}
+  gem.summary       = %q{Ansible Config Parser for Serverspec to test roles, hosts and playbooks. Providing test coverage.}
+  gem.homepage      = "https://github.com/consort-it/ansible_spec_plus"
   gem.license       = "MIT"
-  gem.files         = Dir['lib/*.rb']
+  gem.files         = Dir['lib/**/*.rb']
   gem.executables   = ['asp']
   gem.require_paths = ["lib"]
 
