@@ -14,16 +14,11 @@ node('master') {
 
       }
 
-      // stage('Deploy') {
-      //
-      //   sh 'git config --global user.email "jenkins@consort-it.de" && git config --global user.name "Jenkins"'
-      //   sh 'git tag -a $(date \'+live-%Y%m%d%H%M%S\') -m "$(date \'+live-%Y%m%d%H%M%S\') deployment to azure"'
-      //   sh "git push origin --tags"
-      //   sh "git checkout -b azure"
-      //   sh "git merge master"
-      //   sh "git push -f azure HEAD:master"
-      //
-      // }
+      stage('Version') {
+
+        sh "sed -i 's/^  gem.version.*/  gem.version       = "1.0.${env.BUILD_NUMBER}"/g' ansible_spec_plus.gemspec"
+
+      }
 
       // stage('Notification') {
       //
