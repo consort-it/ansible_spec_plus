@@ -482,7 +482,7 @@ describe AnsibleSpecPlus do
       file_resource = [{"name"=>"ensure apt cache is up to date","apt"=>"update_cache=yes cache_valid_time=3600"}]
 
       # THEN
-      expect(log).to receive(:warn).with('Unknown resource (excluding from summary): {"name"=>"ensure apt cache is up to date", "apt"=>"update_cache=yes cache_valid_time=3600"}')
+      expect(log).to receive(:warn).with('Unknown resource: {"name"=>"ensure apt cache is up to date", "apt"=>"update_cache=yes cache_valid_time=3600"}')
 
       # WHEN
       subject.analyze_resources(file_resource)
