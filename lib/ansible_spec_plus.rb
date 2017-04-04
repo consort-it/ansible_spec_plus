@@ -571,10 +571,10 @@ class AnsibleSpecPlus
       RSpec::Core::RakeTask.new("#{hostname}".to_sym) do |t|
         log.info "Run playbook tests for #{hostname}"
 
-        roles_pattern = ",{#{cfg.roles_path.join(',')}}/{#{ansiblespec_roles.uniq.join(',')}}/spec/*_spec.rb" unless ansiblespec_roles.nil?
-        host_pattern = ",spec/#{hostname}/*_spec.rb" if check_for_host_specs(hostname)
+        roles_pattern = ansiblespec_roles.nil? ? '' : ",{#{cfg.roles_path.join(',')}}/{#{ansiblespec_roles.uniq.join(',')}}/spec/*_spec.rb"
+        host_pattern = check_for_host_specs(hostname) ? ",spec/#{hostname}/*_spec.rb" : ''
 
-        t.pattern << roles_pattern + host_pattern
+        t.pattern = roles_pattern + host_pattern
       end
     end
   end
