@@ -9,13 +9,9 @@ require 'pp'
 require 'json'
 
 class AnsibleSpecPlus
-
-  # TODO do not make this absolute
-  # BASE_DIR = '../vagrant-lifecycle'
-  # BASE_DIR = '../ansible-infrastructure'
-  BASE_DIR = '../ansible-example'
-
   include Helpers::Log
+
+  BASE_DIR = ENV['BASE_DIR']
 
   ##################
   # COMMON METHODS #
@@ -650,5 +646,4 @@ class AnsibleSpecPlus
 
     return playbooks.uniq
   end
-
 end
