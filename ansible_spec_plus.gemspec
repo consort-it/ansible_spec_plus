@@ -13,8 +13,8 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Ansible Config Parser for Serverspec to test roles, hosts and playbooks. Providing test coverage.}
   gem.homepage      = "https://github.com/consort-it/ansible_spec_plus"
   gem.license       = "MIT"
-  gem.files         = Dir['lib/**/*.rb']
-  gem.executables   = ['asp']
+  gem.files         = `git ls-files`.split($/)
+  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.require_paths = ["lib"]
 
   gem.add_development_dependency "bundler", "~> 1.3"
