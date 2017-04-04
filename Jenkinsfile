@@ -16,7 +16,7 @@ node('master') {
 
       stage('Version') {
 
-        sh "sed -i 's/^  gem.version.*/  gem.version       = "1.0.${env.BUILD_NUMBER}"/g' ansible_spec_plus.gemspec"
+        sh "sed -i 's/^  gem.version.*/  gem.version       = \"1.0.${env.BUILD_NUMBER}\"/g' ansible_spec_plus.gemspec"
 
       }
 
