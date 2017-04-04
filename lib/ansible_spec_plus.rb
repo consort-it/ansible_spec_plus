@@ -54,7 +54,7 @@ class AnsibleSpecPlus
       end
 
       if resource_type.nil?
-        log.warn "Unknown resource (excluding from summary): #{resource}"
+        log.warn "Unknown resource: #{resource}"
         next
       end
 
