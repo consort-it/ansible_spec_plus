@@ -11,7 +11,11 @@ require 'json'
 class AnsibleSpecPlus
   include Helpers::Log
 
-  BASE_DIR = ENV['BASE_DIR']
+  if ENV['BASE_DIR']
+    BASE_DIR = ENV['BASE_DIR']
+  else
+    BASE_DIR = './'
+  end
 
   ##################
   # COMMON METHODS #
