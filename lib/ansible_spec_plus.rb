@@ -11,8 +11,9 @@ require 'json'
 class AnsibleSpecPlus
 
   # TODO do not make this absolute
-  BASE_DIR = '../vagrant-lifecycle'
+  # BASE_DIR = '../vagrant-lifecycle'
   # BASE_DIR = '../ansible-infrastructure'
+  BASE_DIR = '../ansible-example'
 
   include Helpers::Log
 
@@ -160,8 +161,7 @@ class AnsibleSpecPlus
       when 'playbook'
         all_resources = analyze_resources(load_playbook_resources(name))
       else
-        log.error "Unknow type '#{type}'. Should be either role, host or playbook."
-        exit 1
+        raise "Unknow type '#{type}'. Should be either role, host or playbook."
       end
 
       tested_resources = []
@@ -323,7 +323,7 @@ class AnsibleSpecPlus
 
         if property['hosts'].empty?
           if ! get_hosts_from_vai_host_file.keys.include?(get_hosts_where_role_is_used.first)
-            log.error "Host doesn't seem to exist. You may want to boot it?"
+            raise "Uuups. I cannot find '#{get_hosts_where_role_is_used.first}' in your hosts file. 'vagrant up #{get_hosts_where_role_is_used.first}' may help."
           end
 
           get_hosts_from_vai_host_file.each do |host, values|
@@ -379,11 +379,6 @@ class AnsibleSpecPlus
         next unless property['name'] == host
 
         if property['hosts'].empty?
-          # if ! get_hosts_from_vai_host_file.keys.include?(host)
-          #   log.error "Host '#{host}' doesn't seem to be up or even exist."
-          #   exit 0
-          # end
-
           get_hosts_from_vai_host_file.each do |host, values|
             values.each do |property|
               RSpec::Core::RakeTask.new(host.to_sym) do |t|
@@ -434,7 +429,7 @@ class AnsibleSpecPlus
 
         AnsibleSpec.load_playbook(playbook_path).each do |playbook|
           next if playbook['tasks'].nil?
-          
+
           playbook['tasks'].map { |task| resources << task }
         end
       end
