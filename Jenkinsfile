@@ -22,8 +22,7 @@ node('master') {
 
       stage('Build') {
 
-        sh "docker build . --tag asp_build"
-        sh "docker run -v \$(pwd):/home/ruby asp_build gem build ansible_spec_plus.gemspec"
+        sh "gem build ansible_spec_plus.gemspec"
 
       }
 
