@@ -14,6 +14,15 @@ extends it to be able to run tests for roles, hosts or playbooks separately.
 - Supports separate test execution of playbook tests (playbook tests combine role and hosts tests)
 - Supports resource code/test coverage
 - Supports remote (default) and local test execution (on a Vagrant box for example) by a command switch
+- Currently supported Ansible resources:
+  - file
+  - template
+  - docker_container
+  - docker_image
+  - service
+  - apt
+  - pip
+  - gem
 
 # Installation
 
