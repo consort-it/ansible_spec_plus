@@ -6,7 +6,7 @@
 Gem::Specification.new do |gem|
   gem.name          = "ansible_spec_plus"
   gem.date          = Time.now.strftime("%Y-%m-%d")
-  gem.version       = "1.0.0"
+  gem.version       = "1.0.1"
   gem.authors       = ["Meik Minks"]
   gem.email         = ["mminks@inoxio.de"]
   gem.description   = %q{Ansible Config Parser for Serverspec to test roles, hosts and playbooks. Providing test coverage.}
