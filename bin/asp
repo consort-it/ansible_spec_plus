@@ -1,8 +1,7 @@
 #! /usr/bin/env ruby
 # coding: utf-8
 
-# TODO comment in again when ready
-# require 'ansible_spec_plus'
+require 'ansible_spec_plus'
 require 'optparse'
 
 require_relative '../lib/ansible_spec_plus'
