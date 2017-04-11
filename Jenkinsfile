@@ -17,7 +17,7 @@ node('master') {
       stage('Version') {
 
         OLD_VERSION = sh (
-            script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\d+.\d+.\d+"',
+            script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+"',
             returnStdout: true
         ).trim()
 
