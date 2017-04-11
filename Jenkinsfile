@@ -22,7 +22,7 @@ node('master') {
         ).trim()
 
         sh "echo ${OLD_VERSION} > version"
-        sh "sed -i 's/\\d+\$/${env.BUILD_NUMBER}/g' version"
+        sh "sed -i \"s/\\d+\$/${env.BUILD_NUMBER}/g\" version"
 
         NEW_VERSION = sh (
             script: 'cat version',
