@@ -16,7 +16,9 @@ node('master') {
 
       stage('Version') {
 
-        sh "sed -i 's/^  gem.version.*/  gem.version       = \"1.0.${env.BUILD_NUMBER}\"/g' ansible_spec_plus.gemspec"
+        sh "VERSION=$(cat ansible_spec_plus.gemspec | grep gem.version | grep -Po '\d+.\d+.\d+') && echo "$VERSION" > version"
+        sh "sed -i 's/\d+$/${env.BUILD_NUMBER}/g' version"
+        sh "sed -i 's/^  gem.version.*/  gem.version       = \"$(cat version)\"/g' ansible_spec_plus.gemspec"
 
       }
 
@@ -28,29 +30,29 @@ node('master') {
 
       stage('Release') {
 
-        sh ""
+        sh "gem push ansible_spec_plus-$(cat version).gem"
 
       }
 
-      // stage('Notification') {
-      //
-      //   GIT_AUTHOR = sh (
-      //       script: 'git --no-pager show -s --format="%an <%ae>" HEAD',
-      //       returnStdout: true
-      //   ).trim()
-      //
-      //   GIT_COMMIT_MESSAGE = sh (
-      //       script: 'git --no-pager show -s --format="%s" HEAD',
-      //       returnStdout: true
-      //   ).trim()
-      //
-      //   mail body: "${GIT_AUTHOR} hat erfolgreich folgende Änderung auf http://www.consort-academy.de deployt:\n\n${GIT_COMMIT_MESSAGE}\n\nSiehe ${env.BUILD_URL}",
-      //             from: 'jenkins@consort-it.de',
-      //             replyTo: 'jenkins@consort-it.de',
-      //             subject: 'live deployment SUCCESSFUL',
-      //             to: 'dev@consort-it.de'
-      //
-      // }
+      stage('Notification') {
+
+        GIT_AUTHOR = sh (
+            script: 'git --no-pager show -s --format="%an <%ae>" HEAD',
+            returnStdout: true
+        ).trim()
+
+        GIT_COMMIT_MESSAGE = sh (
+            script: 'git --no-pager show -s --format="%s" HEAD',
+            returnStdout: true
+        ).trim()
+
+        mail body: "${GIT_AUTHOR} hat erfolgreich das Gem 'ansible_spec_plus' released.\n\n${GIT_COMMIT_MESSAGE}\n\nSiehe ${env.BUILD_URL}",
+                  from: 'jenkins@consort-it.de',
+                  replyTo: 'jenkins@consort-it.de',
+                  subject: 'ansible_spec_plus release SUCCESSFUL',
+                  to: 'dev@consort-it.de'
+
+      }
 
     }
 
@@ -58,11 +60,11 @@ node('master') {
 
       currentBuild.result = "FAILURE"
 
-      // mail body: "${env.BUILD_URL}",
-      //      from: 'jenkins@consort-it.de',
-      //      replyTo: 'jenkins@consort-it.de',
-      //      subject: 'live deployment FAILED',
-      //      to: 'dev@consort-it.de'
+      mail body: "${env.BUILD_URL}",
+           from: 'jenkins@consort-it.de',
+           replyTo: 'jenkins@consort-it.de',
+           subject: 'ansible_spec_plus release FAILED',
+           to: 'dev@consort-it.de'
 
       throw err
 
