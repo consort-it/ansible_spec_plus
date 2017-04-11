@@ -16,20 +16,12 @@ node('master') {
 
       stage('Version') {
 
-        OLD_VERSION = sh (
-            script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+"',
+        VERSION = sh (
+            script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+" | sed "s/[0-9]\$/\${BUILD_NUMBER}/g"',
             returnStdout: true
         ).trim()
 
-        sh "echo ${OLD_VERSION} > version"
-        sh "sed -i \"s/\\d+\$/${env.BUILD_NUMBER}/g\" version"
-
-        NEW_VERSION = sh (
-            script: 'cat version',
-            returnStdout: true
-        ).trim()
-
-        sh "sed -i 's/^  gem.version.*/  gem.version       = \"${NEW_VERSION}\"/g' ansible_spec_plus.gemspec"
+        sh "sed -i 's/^  gem.version.*/  gem.version       = \"${VERSION}\"/g' ansible_spec_plus.gemspec"
 
       }
 
@@ -40,12 +32,12 @@ node('master') {
       }
 
       stage('Release') {
-        NEW_VERSION = sh (
-          script: 'cat version',
+        VERSION = sh (
+          script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+" | sed "s/[0-9]\$/\${BUILD_NUMBER}/g"',
           returnStdout: true
         ).trim()
 
-        sh "gem push ansible_spec_plus-${NEW_VERSION}.gem"
+        sh "gem push ansible_spec_plus-${VERSION}.gem"
 
       }
 
