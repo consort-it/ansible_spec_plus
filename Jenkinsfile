@@ -17,7 +17,7 @@ node('master') {
       stage('Version') {
 
         VERSION = sh (
-            script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+" | sed "s/[0-9]+\$/\${BUILD_NUMBER}/g"',
+            script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+" | sed "s/[0-9]*\$/\${BUILD_NUMBER}/g"',
             returnStdout: true
         ).trim()
 
@@ -33,7 +33,7 @@ node('master') {
 
       stage('Release') {
         VERSION = sh (
-          script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+" | sed "s/[0-9]+\$/\${BUILD_NUMBER}/g"',
+          script: 'cat ansible_spec_plus.gemspec | grep gem.version | grep -Po "\\d+.\\d+.\\d+" | sed "s/[0-9]*\$/\${BUILD_NUMBER}/g"',
           returnStdout: true
         ).trim()
 
