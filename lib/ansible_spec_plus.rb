@@ -315,8 +315,8 @@ class AnsibleSpecPlus
   def load_role_resources(name)
     resources = []
 
-    Dir.chdir(BASE_DIR) do
-      Dir.glob("roles/#{name}/tasks/*.yml").each do |file|
+    Dir.chdir("#{BASE_DIR}/roles/#{name}/tasks") do
+      Dir.glob("*.yml").each do |file|
         AnsibleSpec.load_playbook(file).each do |resource|
           resources << resource
         end
