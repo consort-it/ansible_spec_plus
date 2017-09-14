@@ -594,7 +594,9 @@ class AnsibleSpecPlus
         playbook_path = site.values[0]
 
         AnsibleSpec.load_playbook(playbook_path).each do |playbook|
-          playbook['roles'].map { |role| resources << load_role_resources(role) }
+          playbook['roles'].uniq.map { |role|
+            resources << load_role_resources(role)
+          }
         end
       end
     end
